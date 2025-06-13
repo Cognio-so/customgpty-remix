@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Form, useActionData, useSearchParams, Link, useNavigation } from "@remix-run/react";
 import type { ActionFunctionArgs, MetaFunction } from "@remix-run/cloudflare";
-import { resetPassword } from "../services/auth";
+import { resetPassword } from "../services/auth.js";
 import { json } from "@remix-run/cloudflare";
 
 export const meta: MetaFunction = () => {

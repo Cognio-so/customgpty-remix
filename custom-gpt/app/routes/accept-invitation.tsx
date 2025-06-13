@@ -29,7 +29,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const password = formData.get('password') as string;
 
   try {
-    const result = await acceptInvitation(token, email, { name, password });
+    const result = await acceptInvitation(context.env, token, email, { name, password });
     
     if (result.success) {
       return createUserSession(

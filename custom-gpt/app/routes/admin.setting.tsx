@@ -2,7 +2,7 @@ import { ActionFunctionArgs, LoaderFunctionArgs, json } from '@remix-run/cloudfl
 import { useLoaderData, useActionData } from '@remix-run/react';
 import AdminSettingPage from '~/components/admin/AdminSettingPage';
 import { getThemeFromCookie, createThemeCookie, Theme } from '~/lib/theme';
-import { requiredAuth, getApiKeys, updateApiKeys } from '~/services/auth';
+import { requiredAuth, getApiKeys, updateApiKeys } from '../services/auth.js';
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   try {

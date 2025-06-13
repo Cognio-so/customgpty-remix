@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Form, useActionData, useSearchParams, Link, useNavigation } from "@remix-run/react";
 import type { ActionFunctionArgs, MetaFunction } from "@remix-run/cloudflare";
-import { verifyEmail } from "../services/auth";
-import { createUserSession } from "../lib/session"; 
+import { verifyEmail } from "../services/auth.js";
+import { createUserSession } from "../lib/session.js"; 
 import { redirect, json } from "@remix-run/cloudflare";
 
 type ActionData = {

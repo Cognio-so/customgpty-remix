@@ -710,6 +710,75 @@ const inviteTeamMember = async (env, email, role, adminId) => {
   }
 };
 
+// Add this function after inviteTeamMember and before the export section
+const acceptInvitation = async (env, token, email, userData) => {
+  try {
+    if (!token || !email || !userData) {
+      throw new Error("Token, email, and user data are required");
+    }
+
+    const { name, password } = userData;
+
+    // Find invitation by token and email
+    const invitation = await dbUtils.findOne(env, 'invitations', {
+      email: email.toLowerCase(),
+      token,
+      status: 'pending',
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!invitation) {
+      throw new Error("Invalid or expired invitation");
+    }
+
+    // Check if user already exists
+    const existingUser = await dbUtils.findOne(env, 'users', {
+      email: email.toLowerCase()
+    });
+
+    if (existingUser) {
+      throw new Error("User already exists with this email");
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create new user
+    const newUser = {
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      role: invitation.role || 'user',
+      isVerified: true,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const userResult = await dbUtils.insertOne(env, 'users', newUser);
+
+    // Update invitation status
+    await dbUtils.updateOne(env, 'invitations',
+      { _id: invitation._id },
+      { status: 'accepted', acceptedAt: new Date() }
+    );
+
+    // Return user for session creation
+    return {
+      success: true,
+      user: {
+        _id: userResult.insertedId,
+        name,
+        email: email.toLowerCase(),
+        role: invitation.role || 'user'
+      }
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
 // Update the export section
 export {
   SignupUser,
@@ -723,6 +792,7 @@ export {
   updateUserPermissions,
   removeTeamMember,
   inviteTeamMember,
+  acceptInvitation,
   saveApiKeys,
   getApiKeys,
   updateApiKeys,
