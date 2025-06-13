@@ -12,24 +12,17 @@ export const connectToDatabase = async (env) => {
   }
 
   try {
-    // Use fetch-based MongoDB connection for Workers
     const { MongoClient } = await import('mongodb');
     
-    // Workers-compatible connection options
+    // Workers-compatible connection options (removed unsupported options)
     const client = new MongoClient(env.MONGODB_URI, {
-      // Disable problematic features for Workers
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
       connectTimeoutMS: 10000,
       maxPoolSize: 1, // Keep pool small for Workers
       minPoolSize: 0,
       maxIdleTimeMS: 30000,
-      // Disable features that don't work in Workers
-      family: 4, // Force IPv4
-      keepAlive: false,
-      keepAliveInitialDelay: 0,
+      // Removed: keepAlive, keepAliveInitialDelay, family (not supported in Workers)
     });
 
     await client.connect();
