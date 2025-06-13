@@ -11,15 +11,15 @@ directory = "./build/client"
 [build]
 command = "npm run build"
 
-# Production environment variables - non-sensitive only
+# Production environment variables
 [vars]
 NODE_ENV = "production"
-APP_URL = "https://customgpt.your-subdomain.workers.dev"
+APP_URL = "https://customgpt.asset-7a1.workers.dev"
 CLOUDFLARE_ACCOUNT_ID = "7a1ee5c85f806b8611bceb0195d44a6c"
 R2_BUCKET_NAME = "ai-agents"
 R2_PUBLIC_DOMAIN = "https://pub-3d035218db92408db790b6ce46af0d9e.r2.dev"
 
-# R2 bucket bindings for file storage
+# R2 bucket bindings
 [[r2_buckets]]
 binding = "FILES_BUCKET"
 bucket_name = "ai-agents"

@@ -1,18 +1,10 @@
-import { MongoClient } from 'mongodb';
-
-// Global MongoDB client cache
+// Workers-compatible MongoDB connection
 let cachedClient = null;
 let cachedDb = null;
 
 export const connectToDatabase = async (env) => {
-  // Check if MongoDB URI exists
   if (!env.MONGODB_URI) {
     throw new Error('MONGODB_URI environment variable is not set');
-  }
-
-  // Validate MongoDB URI format
-  if (!env.MONGODB_URI.startsWith('mongodb://') && !env.MONGODB_URI.startsWith('mongodb+srv://')) {
-    throw new Error('MONGODB_URI must start with mongodb:// or mongodb+srv://');
   }
 
   if (cachedClient && cachedDb) {
@@ -20,18 +12,30 @@ export const connectToDatabase = async (env) => {
   }
 
   try {
+    // Use fetch-based MongoDB connection for Workers
+    const { MongoClient } = await import('mongodb');
+    
+    // Workers-compatible connection options
     const client = new MongoClient(env.MONGODB_URI, {
-      maxPoolSize: 10,
+      // Disable problematic features for Workers
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      maxPoolSize: 1, // Keep pool small for Workers
+      minPoolSize: 0,
+      maxIdleTimeMS: 30000,
+      // Disable features that don't work in Workers
+      family: 4, // Force IPv4
+      keepAlive: false,
+      keepAliveInitialDelay: 0,
     });
 
     await client.connect();
+    const db = client.db('customgpt');
     
-    // Use default database from connection string instead of specifying one
-    const db = client.db();
-    
-    // Test the connection
+    // Test connection
     await db.command({ ping: 1 });
 
     cachedClient = client;
@@ -44,14 +48,153 @@ export const connectToDatabase = async (env) => {
   }
 };
 
-const getDatabase = async (env) => {
-  const { db } = await connectToDatabase(env);
-  return db;
+// Alternative: Use MongoDB Data API (more reliable for Workers)
+export const connectToDatabase_DataAPI = async (env) => {
+  if (!env.MONGODB_DATA_API_URL || !env.MONGODB_API_KEY) {
+    throw new Error('MongoDB Data API credentials not configured');
+  }
+
+  return {
+    async findOne(collection, filter) {
+      const response = await fetch(`${env.MONGODB_DATA_API_URL}/action/findOne`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': env.MONGODB_API_KEY,
+        },
+        body: JSON.stringify({
+          collection,
+          database: 'customgpt',
+          filter,
+        }),
+      });
+      
+      const result = await response.json();
+      return result.document;
+    },
+    
+    async insertOne(collection, document) {
+      const response = await fetch(`${env.MONGODB_DATA_API_URL}/action/insertOne`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': env.MONGODB_API_KEY,
+        },
+        body: JSON.stringify({
+          collection,
+          database: 'customgpt',
+          document,
+        }),
+      });
+      
+      return await response.json();
+    },
+    
+    // Add more methods as needed
+  };
+};
+
+// Database utility functions
+export const dbUtils = {
+  async findOne(env, collection, query) {
+    try {
+      const { db } = await connectToDatabase(env);
+      return await db.collection(collection).findOne(query);
+    } catch (error) {
+      console.error(`Error finding document in ${collection}:`, error);
+      throw error;
+    }
+  },
+
+  async find(env, collection, query = {}, options = {}) {
+    try {
+      const { db } = await connectToDatabase(env);
+      return await db.collection(collection).find(query, options).toArray();
+    } catch (error) {
+      console.error(`Error finding documents in ${collection}:`, error);
+      throw error;
+    }
+  },
+
+  async insertOne(env, collection, document) {
+    try {
+      const { db } = await connectToDatabase(env);
+      return await db.collection(collection).insertOne({
+        ...document,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error(`Error inserting document into ${collection}:`, error);
+      throw error;
+    }
+  },
+
+  async updateOne(env, collection, query, update) {
+    try {
+      const { db } = await connectToDatabase(env);
+      
+      let finalUpdate = update;
+      if (!update.$set) {
+        const setFields = {};
+        const operators = {};
+        
+        Object.keys(update).forEach(key => {
+          if (key.startsWith('$')) {
+            operators[key] = update[key];
+          } else {
+            setFields[key] = update[key];
+          }
+        });
+        
+        finalUpdate = {
+          ...operators,
+          $set: {
+            ...setFields,
+            updatedAt: new Date()
+          }
+        };
+      } else {
+        finalUpdate = {
+          ...update,
+          $set: {
+            ...update.$set,
+            updatedAt: new Date()
+          }
+        };
+      }
+      
+      return await db.collection(collection).updateOne(query, finalUpdate);
+    } catch (error) {
+      console.error(`Error updating document in ${collection}:`, error);
+      throw error;
+    }
+  },
+
+  async deleteOne(env, collection, query) {
+    try {
+      const { db } = await connectToDatabase(env);
+      return await db.collection(collection).deleteOne(query);
+    } catch (error) {
+      console.error(`Error deleting document from ${collection}:`, error);
+      throw error;
+    }
+  },
+
+  async countDocuments(env, collection, query = {}) {
+    try {
+      const { db } = await connectToDatabase(env);
+      return await db.collection(collection).countDocuments(query);
+    } catch (error) {
+      console.error(`Error counting documents in ${collection}:`, error);
+      throw error;
+    }
+  }
 };
 
 // Helper function to create indexes
 export async function createIndexes(env) {
-  const db = await getDatabase(env);
+  const db = await connectToDatabase(env);
   
   try {
     // Users collection indexes
@@ -73,108 +216,3 @@ export async function createIndexes(env) {
     console.error('Error creating indexes:', error);
   }
 }
-
-// Database utility functions with better error handling
-export const dbUtils = {
-  async findOne(env, collection, query) {
-    try {
-      const db = await getDatabase(env);
-      return await db.collection(collection).findOne(query);
-    } catch (error) {
-      console.error(`Error finding document in ${collection}:`, error);
-      throw error;
-    }
-  },
-
-  async find(env, collection, query = {}, options = {}) {
-    try {
-      const db = await getDatabase(env);
-      return await db.collection(collection).find(query, options).toArray();
-    } catch (error) {
-      console.error(`Error finding documents in ${collection}:`, error);
-      throw error;
-    }
-  },
-
-  async findMany(env, collection, query = {}, options = {}) {
-    return this.find(env, collection, query, options);
-  },
-
-  async insertOne(env, collection, document) {
-    try {
-      const db = await getDatabase(env);
-      return await db.collection(collection).insertOne({
-        ...document,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-    } catch (error) {
-      console.error(`Error inserting document into ${collection}:`, error);
-      throw error;
-    }
-  },
-
-  async updateOne(env, collection, query, update) {
-    try {
-      const db = await getDatabase(env);
-      
-      // Ensure proper structure for the update
-      let finalUpdate = update;
-      if (!update.$set) {
-        // If no $set operator, create one and move all fields there except operators
-        const setFields = {};
-        const operators = {};
-        
-        Object.keys(update).forEach(key => {
-          if (key.startsWith('$')) {
-            operators[key] = update[key];
-          } else {
-            setFields[key] = update[key];
-          }
-        });
-        
-        finalUpdate = {
-          ...operators,
-          $set: {
-            ...setFields,
-            updatedAt: new Date()
-          }
-        };
-      } else {
-        // If $set exists, just add updatedAt
-        finalUpdate = {
-          ...update,
-          $set: {
-            ...update.$set,
-            updatedAt: new Date()
-          }
-        };
-      }
-      
-      return await db.collection(collection).updateOne(query, finalUpdate);
-    } catch (error) {
-      console.error(`Error updating document in ${collection}:`, error);
-      throw error;
-    }
-  },
-
-  async deleteOne(env, collection, query) {
-    try {
-      const db = await getDatabase(env);
-      return await db.collection(collection).deleteOne(query);
-    } catch (error) {
-      console.error(`Error deleting document from ${collection}:`, error);
-      throw error;
-    }
-  },
-
-  async countDocuments(env, collection, query = {}) {
-    try {
-      const db = await getDatabase(env);
-      return await db.collection(collection).countDocuments(query);
-    } catch (error) {
-      console.error(`Error counting documents in ${collection}:`, error);
-      throw error;
-    }
-  }
-};
