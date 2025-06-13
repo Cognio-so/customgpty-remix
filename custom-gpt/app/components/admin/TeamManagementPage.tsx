@@ -348,7 +348,6 @@ const TeamManagementPage: React.FC<TeamManagementPageProps> = ({ users, theme })
             return;
         }
         
-        console.log('Toggling menu for member:', memberId);
         
         // If showing for the current member, hide it
         if (showActionsMenu === memberId) {
@@ -694,7 +693,6 @@ const TeamManagementPage: React.FC<TeamManagementPageProps> = ({ users, theme })
                                         onClick={(e) => { 
                                             e.stopPropagation();
                                             if (member && member.id) {
-                                                console.log("Button clicked for member:", member.id);
                                                 toggleActionsMenu(member.id, e);
                                             } else {
                                                 console.error("Invalid member data:", member);
@@ -757,7 +755,6 @@ const TeamManagementPage: React.FC<TeamManagementPageProps> = ({ users, theme })
                                                     <button
                                                         onClick={(e) => { 
                                                             e.stopPropagation(); 
-                                                            console.log("Button clicked for member:", member.id);
                                                             setShowActionsMenu(member.id);
                                                         }}
                                                         className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"

@@ -1,6 +1,5 @@
 import { Outlet } from '@remix-run/react';
 import { LoaderFunctionArgs, json, redirect } from "@remix-run/cloudflare";
-import { useLoaderData } from "@remix-run/react";
 import { getUserFromSession } from "../lib/session.js";
 import UserSidebar from '~/components/user/UserSidebar';
 

@@ -20,7 +20,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     const theme = getThemeFromCookie(request) || 'light';
     
     // Get API keys from database
-    const apiKeysResult = await getApiKeys(user._id);
+    const apiKeysResult = await getApiKeys(context.env, user._id);
     
     const userSettings = {
       theme,
@@ -62,7 +62,6 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json({ error: 'Invalid theme' }, { status: 400 });
         }
 
-        console.log('Updating theme to:', theme);
 
         return json(
           { success: true, message: 'Theme updated successfully' },
@@ -91,7 +90,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json({ error: 'At least one API key is required' }, { status: 400 });
         }
 
-        const result = await updateApiKeys(user._id, apiKeys);
+        const result = await updateApiKeys(context.env, user._id, apiKeys);
         
         if (result.success) {
           return json({ success: true, message: result.message });
@@ -117,9 +116,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json({ error: 'Password must be at least 8 characters long' }, { status: 400 });
         }
 
-        // In a real app, you'd verify current password and update in database
-        // For now, just simulate success
-        console.log('Updating password for user:', user._id);
+
         
         return json({ success: true, message: 'Password updated successfully' });
       }

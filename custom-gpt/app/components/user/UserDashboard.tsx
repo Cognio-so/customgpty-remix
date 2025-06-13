@@ -204,7 +204,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ userName = "User", onNavi
 
   return (
     <div className={`flex h-screen font-sans ${theme === 'dark' ? 'dark' : ''}`}>
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-900 text-black dark:text-white">
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-black text-black dark:text-white">
         {/* Mobile Sidebar Overlay */}
         {showSidebar && (
           <div

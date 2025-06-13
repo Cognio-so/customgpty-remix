@@ -30,10 +30,10 @@ export async function loader({ request, context }: LoaderFunctionArgs): Promise<
   const theme = getThemeFromCookie(request) || 'light';
   
   try {
-    const users = await getAllUsers();
+    const users = await getAllUsers(context.env );
     
     // Transform MongoDB documents to plain objects
-    const plainUsers = users.map(user => {
+    const plainUsers = users.map((user: any) => {
       // Use type-safe conversion by checking for toObject or toJSON methods
       let userData;
       if (typeof user.toObject === 'function') {
@@ -85,7 +85,6 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = formData.get('intent') as string;
 
-  console.log('Action called with intent:', intent); // Debug log
 
   try {
     switch (intent) {
@@ -94,13 +93,13 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const role = formData.get('role') as string;
         const isActive = formData.get('isActive') === 'true';
 
-        console.log('Updating permissions for member:', memberId); // Debug log
+
 
         if (!memberId) {
           return json({ error: "Member ID is required", success: false }, { status: 400 });
         }
 
-        await updateUserPermissions(memberId, { role, isActive });
+        await updateUserPermissions(context.env, memberId, { role, isActive });
         
         return json({ 
           success: true, 
@@ -113,7 +112,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
       case 'removeMember': {
         const memberId = formData.get('memberId') as string;
         
-        console.log('Removing member:', memberId); // Debug log
+
 
         if (!memberId) {
           return json({ error: "Member ID is required", success: false }, { status: 400 });
@@ -126,7 +125,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           }, { status: 400 });
         }
         
-        await removeTeamMember(memberId);
+        await removeTeamMember(context.env, memberId);
         
         return json({ 
           success: true, 
@@ -140,8 +139,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const memberIds = formData.get('memberIds') as string;
         const gptIds = formData.get('gptIds') as string;
         
-        console.log('Raw memberIds:', memberIds); // Debug log
-        console.log('Raw gptIds:', gptIds); // Debug log
+
         
         if (!memberIds || !gptIds) {
           return json({ error: "Member IDs and GPT IDs are required", success: false }, { status: 400 });
@@ -158,8 +156,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json({ error: "Invalid data format", success: false }, { status: 400 });
         }
 
-        console.log('Parsed memberIds:', parsedMemberIds); // Debug log
-        console.log('Parsed gptIds:', parsedGptIds); // Debug log
+
         
         if (!Array.isArray(parsedMemberIds) || !Array.isArray(parsedGptIds)) {
           return json({ error: "Invalid member IDs or GPT IDs format", success: false }, { status: 400 });
@@ -171,7 +168,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         // For each member, assign the selected GPTs
         for (const memberId of parsedMemberIds) {
-          console.log('Processing member ID:', memberId); // Debug log
+
           
           if (!memberId || memberId === 'null' || memberId === 'undefined') {
             console.error('Invalid member ID:', memberId);
@@ -182,24 +179,24 @@ export async function action({ request, context }: ActionFunctionArgs) {
           }
 
           try {
-            // Get current assignments
-            const currentAssignments = await getAssignedGpts(memberId);
-            const currentGptIds = currentAssignments.map(gpt => gpt._id?.toString() || gpt.id?.toString());
+            // Fix: Add context.env parameter
+            const currentAssignments = await getAssignedGpts(context.env, memberId);
+            const currentGptIds = currentAssignments.map((gpt: any) => gpt._id?.toString() || gpt.id?.toString());
             
-            console.log('Current assignments for member', memberId, ':', currentGptIds); // Debug log
+
             
             // Remove existing assignments that are not in the new selection
-            const toRemove = currentGptIds.filter(id => !parsedGptIds.includes(id));
+            const toRemove = currentGptIds.filter((id: any) => !parsedGptIds.includes(id));
             if (toRemove.length > 0) {
-              console.log('Removing GPTs:', toRemove); // Debug log
-              await removeGptsFromUser(memberId, toRemove, user.id);
+
+              await removeGptsFromUser(context.env, memberId, toRemove, user.id);
             }
             
             // Add new assignments
             const toAdd = parsedGptIds.filter(id => !currentGptIds.includes(id));
             if (toAdd.length > 0) {
-              console.log('Adding GPTs:', toAdd); // Debug log
-              await assignGptsToUser(memberId, toAdd, user.id);
+
+              await assignGptsToUser(context.env, memberId, toAdd, user.id);
             }
           } catch (error) {
             console.error(`Error assigning GPTs to user ${memberId}:`, error);
@@ -227,7 +224,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }
 
         try {
-          const result = await inviteTeamMember(email, role, user.id);
+          const result = await inviteTeamMember(context.env,  email, role, user.id);
           
           if (result.success) {
             return json({ 

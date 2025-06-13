@@ -11,8 +11,8 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   }
 
   try {
-    // Get GPTs assigned to this user
-    const agents = await getAssignedGpts(user.id);
+    // Get GPTs assigned to this user - pass env parameter
+    const agents = await getAssignedGpts(context.env, user.id);
     return json({ agents, user });
   } catch (error) {
     console.error("Error loading assigned GPTs:", error);

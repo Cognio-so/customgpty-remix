@@ -15,7 +15,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
   try {
     // Get all GPTs created by this admin
-    const gpts = await getAllCustomGpts(user.id);
+    const gpts = await getAllCustomGpts(context.env, user.id);
     return json({ gpts: gpts || [] });
   } catch (error) {
     console.error('Error fetching admin GPTs:', error);

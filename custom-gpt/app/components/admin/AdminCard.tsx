@@ -46,7 +46,7 @@ const AdminCard: React.FC<AdminCardProps> = ({
                 {gpt.imageUrl ? (
                     <div className="w-full h-full overflow-hidden">
                         <img 
-                            src={gpt.imageUrl} 
+                            src={gpt.imageUrl}  
                             alt={gpt.name} 
                             className="w-full h-full object-cover object-center"
                             style={{ objectPosition: 'center' }}

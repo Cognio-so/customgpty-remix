@@ -28,7 +28,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       throw new Response("Forbidden: Admin access required", { status: 403 });
     }
 
-    const gptsResult = await getAllCustomGpts(user.id);
+    const gptsResult = await getAllCustomGpts(context.env, user.id);
     if (!gptsResult) {
       throw new Response("Failed to fetch GPTs", { status: 500 });
     }

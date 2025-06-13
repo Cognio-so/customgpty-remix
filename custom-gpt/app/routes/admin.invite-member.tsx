@@ -1,7 +1,6 @@
 import { ActionFunctionArgs, LoaderFunctionArgs, json } from "@remix-run/cloudflare";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { getUserFromSession } from "../lib/session.js";
-import { sendInvitationEmail } from "../services/mail.js";
 import { inviteTeamMember } from "../services/auth.js";
 import { useState } from "react";
 
@@ -36,7 +35,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
   if (intent === 'invite') {
     try {
       // Create invitation record and send email
-      const result = await inviteTeamMember(email, role, user.id);
+      const result = await inviteTeamMember(context.env, email, role, user.id);
       
       if (result.success) {
         return json({ 

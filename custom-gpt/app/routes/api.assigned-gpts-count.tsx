@@ -21,7 +21,8 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       return json({ error: "User ID required" }, { status: 400 });
     }
 
-    const assignedGpts = await getAssignedGpts(userId);
+    // Fix: Add context.env parameter
+    const assignedGpts = await getAssignedGpts(context.env, userId);
     return json({ 
       count: assignedGpts?.length || 0,
       assignedGpts: assignedGpts || []

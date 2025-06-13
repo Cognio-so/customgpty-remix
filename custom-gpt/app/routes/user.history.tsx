@@ -34,8 +34,7 @@ export async function loader({ request, context }: LoaderFunctionArgs): Promise<
   const theme = getThemeFromCookie(request) || 'light';
 
   try {
-    // In a real implementation, you'd fetch conversation history from your database
-    // For now, we'll return empty array since the component handles this
+
     const conversations: ConversationData[] = [];
 
     return json({ 

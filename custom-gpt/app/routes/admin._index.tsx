@@ -15,7 +15,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   }
 
   try {
-    const agents = await getAllCustomGpts(user.id);
+    const agents = await getAllCustomGpts(context.env, user.id);
     return json({ agents, user });
   } catch (error) {
     console.error("Error loading custom GPTs:", error);

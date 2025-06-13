@@ -19,7 +19,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   
   if (mode === 'edit' && gptId) {
     try {
-      editGptData = await getCustomGptById(gptId, user.id);
+      editGptData = await getCustomGptById(context.env, gptId, user.id);
     } catch (error) {
       console.error("Error loading GPT for edit:", error);
       throw new Response("GPT not found", { status: 404 });
@@ -45,6 +45,25 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const gptId = formData.get('gptId') as string;
 
   try {
+    // Extract file data with debugging
+    const profileImage = formData.get('profileImage') as File | null;
+    const knowledgeFiles = formData.getAll('knowledgeFiles') as File[];
+    
+
+   
+    
+    // Filter out empty files with better debugging
+    const validKnowledgeFiles = knowledgeFiles.filter((file, index) => {
+      const isValid = file && file instanceof File && file.size > 0 && file.name && file.name !== '';
+      return isValid;
+    });
+
+    
+    const files = {
+      profileImage: profileImage && profileImage.size > 0 ? profileImage : null,
+      knowledgeFiles: validKnowledgeFiles
+    };
+
     if (intent === 'update' && gptId) {
       // Handle update
       const updateData = {
@@ -52,15 +71,25 @@ export async function action({ request, context }: ActionFunctionArgs) {
         description: formData.get('description') as string,
         instructions: formData.get('instructions') as string,
         conversationStarter: formData.get('conversationStarter') as string,
-        model: formData.get('model') as string,
         imageUrl: formData.get('imageUrl') as string,
+        model: formData.get('model') as string,
         folder: formData.get('folder') as string || null,
         capabilities: {
           webBrowsing: formData.get('webBrowsing') === 'on'
         }
       };
 
-      await updateCustomGpt(gptId, updateData, user.id);
+
+
+      // Only include imageUrl if no new image is being uploaded
+      if (!files.profileImage) {
+        const existingImageUrl = formData.get('existingImageUrl') as string;
+        if (existingImageUrl) {
+          updateData.imageUrl = existingImageUrl; 
+        }
+      }
+
+      await updateCustomGpt(context.env, gptId, updateData, user.id, files);
       
       // Redirect to collection page after successful update
       return redirect('/admin/collection?updated=true');
@@ -72,15 +101,17 @@ export async function action({ request, context }: ActionFunctionArgs) {
         description: formData.get('description') as string,
         instructions: formData.get('instructions') as string,
         conversationStarter: formData.get('conversationStarter') as string,
-        model: formData.get('model') as string,
         imageUrl: formData.get('imageUrl') as string,
+        model: formData.get('model') as string,
         folder: formData.get('folder') as string || null,
         capabilities: {
           webBrowsing: formData.get('webBrowsing') === 'on'
         }
       };
 
-      await createCustomGpt(gptData, user.id);
+
+
+      await createCustomGpt(context.env, gptData, user.id, files);
       
       // Redirect to collection page after successful creation
       return redirect('/admin/collection?created=true');

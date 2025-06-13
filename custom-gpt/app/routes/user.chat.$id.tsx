@@ -19,7 +19,7 @@ export async function loader({ request, context, params }: LoaderFunctionArgs) {
 
   try {
     // This will check if user has access to the GPT (either created it or it's assigned to them)
-    const gptData = await getCustomGptById(id, user.id);
+    const gptData = await getCustomGptById(context.env, id, user.id);
     return json({ gptData, user });
   } catch (error) {
     console.error("Error loading GPT:", error);

@@ -10,25 +10,22 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
   const user = await getUserFromSession(request, context.env);
   
   if (!user || user.role !== 'admin') {
-    throw new Response("Unauthorized", { status: 401 });
+    return redirect('/login');
   }
 
   if (!params.id) {
-    throw new Response("Member ID is required", { status: 400 });
+    return redirect('/admin/team');
   }
 
   try {
-    const memberResult = await getUserById(params.id);
+    const memberResult = await getUserById(context.env, params.id);
     
     if (!memberResult) {
       return redirect('/admin/team');
     }
 
-    // Get all GPTs created by admin
-    const allGpts = await getAllCustomGpts(user.id);
-    
-    // Get GPTs already assigned to this user
-    const assignedGpts = await getAssignedGpts(params.id);
+    const allGpts = await getAllCustomGpts(context.env, user.id);
+    const assignedGpts = await getAssignedGpts(context.env, params.id);
     const assignedGptIds = assignedGpts.map((gpt: any) => gpt._id.toString());
     
     return json({ 
@@ -64,22 +61,18 @@ export async function action({ params, request, context }: ActionFunctionArgs) {
         return json({ error: "Please select at least one GPT", success: false });
       }
 
-      // First, get currently assigned GPTs
-      const currentlyAssigned = await getAssignedGpts(params.id);
+      const currentlyAssigned = await getAssignedGpts(context.env, params.id);
       const currentlyAssignedIds = currentlyAssigned.map((gpt: any) => gpt._id.toString());
       
-      // Determine which GPTs to assign and which to remove
-      const toAssign = selectedGptIds.filter(id => !currentlyAssignedIds.includes(id));
-      const toRemove = currentlyAssignedIds.filter(id => !selectedGptIds.includes(id));
+      const toAssign = selectedGptIds.filter((id: any) => !currentlyAssignedIds.includes(id));
+      const toRemove = currentlyAssignedIds.filter((id: any) => !selectedGptIds.includes(id));
       
-      // Assign new GPTs
       if (toAssign.length > 0) {
-        await assignGptsToUser(params.id, toAssign, user.id);
+        await assignGptsToUser(context.env, params.id, toAssign, user.id);
       }
       
-      // Remove unselected GPTs
       if (toRemove.length > 0) {
-        await removeGptsFromUser(params.id, toRemove, user.id);
+        await removeGptsFromUser(context.env, params.id, toRemove, user.id);
       }
       
       return json({ 
@@ -112,7 +105,7 @@ export default function AssignGptsPage() {
   const handleGptToggle = (gptId: string) => {
     setSelectedGpts(prev => 
       prev.includes(gptId) 
-        ? prev.filter(id => id !== gptId)
+        ? prev.filter((id: any) => id !== gptId)
         : [...prev, gptId]
     );
   };

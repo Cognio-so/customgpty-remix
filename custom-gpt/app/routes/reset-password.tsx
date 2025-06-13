@@ -11,7 +11,7 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request, context }: ActionFunctionArgs) {
   const formData = await request.formData();
   
   try {
@@ -24,7 +24,7 @@ export async function action({ request }: ActionFunctionArgs) {
       throw new Error("Passwords do not match");
     }
     
-    await resetPassword({ email, token, newPassword });
+    await resetPassword(context.env, { email, token, newPassword });
     
     return json({ success: true, message: "Password reset successfully" });
   } catch (error) {
@@ -70,7 +70,7 @@ export default function ResetPassword() {
             <div className="mt-4">
               <Link 
                 to="/login"
-                className="w-full inline-block bg-black text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 text-center"
+                className="w-full inline-block bg-black text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 text-center"
               >
                 Go to Login
               </Link>
@@ -91,7 +91,7 @@ export default function ResetPassword() {
                   name="newPassword"
                   type={showPassword ? "text" : "password"}
                   required
-                  minLength={8}
+                  minLength={6}
                   className="w-full bg-white text-black px-3 py-2 border border-neutral-300 rounded-lg pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="••••••••"
                 />
@@ -113,7 +113,7 @@ export default function ResetPassword() {
                   )}
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
+              <p className="text-xs text-gray-500 mt-1">Password must be at least 6 characters long</p>
             </div>
             
             <div>
@@ -152,7 +152,7 @@ export default function ResetPassword() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-black text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="w-full bg-black text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
@@ -174,7 +174,7 @@ export default function ResetPassword() {
             Remember your password?{" "}
             <Link
               to="/login"
-              className="text-black font-medium hover:text-blue-800"
+              className="text-blue-600 font-medium hover:text-blue-800"
             >
               Sign in
             </Link>

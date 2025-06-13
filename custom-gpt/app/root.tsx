@@ -11,7 +11,7 @@ import { json } from "@remix-run/cloudflare";
 
 import "./tailwind.css";
 import { ThemeProvider } from './contexts/ThemeContext';
-import { getThemeFromCookie, Theme } from './lib/theme';
+import { getThemeFromCookie } from './lib/theme';
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },

@@ -1,7 +1,7 @@
 import { LoaderFunctionArgs, json, redirect } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
 import { getUserFromSession } from "../lib/session.js";
-import { getUserById } from "../services/auth.js";
+import { getUserById } from "../services/auth.js";  
 import { getAllCustomGpts } from "../services/customgpt.js";
 import TeamMemberDetails from "~/components/admin/TeamMemberDetails";
 
@@ -17,7 +17,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
   }
 
   try {
-    const memberResult = await getUserById(params.id);
+    const memberResult = await getUserById(context.env, params.id);
     
     // If user not found (deleted/inactive), redirect to team page
     if (!memberResult) {
@@ -25,7 +25,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
     }
 
     // Get GPTs created by this member
-    const memberGpts = await getAllCustomGpts(params.id);
+    const memberGpts = await getAllCustomGpts(context.env,  params.id);
     
     return json({ 
       user: memberResult,

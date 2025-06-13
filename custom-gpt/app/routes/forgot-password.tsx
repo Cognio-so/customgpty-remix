@@ -17,12 +17,12 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request, context }: ActionFunctionArgs) {
   const formData = await request.formData();
   const email = formData.get("email") as string;
 
   try {
-    const result = await requestPasswordReset(email);
+    const result = await requestPasswordReset(context.env, email);
     return json<ActionData>({ 
       success: true,
       message: result.message
@@ -92,7 +92,7 @@ export default function ForgotPassword() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-black text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-full bg-black text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center">
@@ -113,7 +113,7 @@ export default function ForgotPassword() {
             Remember your password?{" "}
             <Link
               to="/login"
-              className="text-black font-medium hover:text-blue-800"
+              className="text-blue-600 font-medium hover:text-blue-800"
             >
               Sign in
             </Link>
@@ -122,7 +122,7 @@ export default function ForgotPassword() {
             Don't have an account?{" "}
             <Link
               to="/signup"
-              className="text-black font-medium hover:text-blue-800"
+              className="text-blue-600 font-medium hover:text-blue-800"
             >
               Sign up
             </Link>

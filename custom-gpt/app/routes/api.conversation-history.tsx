@@ -1,6 +1,6 @@
 import { LoaderFunctionArgs, ActionFunctionArgs, json } from '@remix-run/cloudflare';
 import { getUserFromSession } from '../lib/session.js';
-import { getUserConversationHistory, deleteUserConversation } from '../services/conversation.js';
+import { getUserConversationHistory, deleteConversation } from '../services/conversation.js';
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const user = await getUserFromSession(request, context.env);
@@ -17,7 +17,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   }
 
   try {
-    const conversations = await getUserConversationHistory(userId);
+    const conversations = await getUserConversationHistory(context.env, userId);
     
     return json({ 
       success: true, 
@@ -51,7 +51,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         return json({ error: 'Invalid request' }, { status: 400 });
       }
 
-      await deleteUserConversation(userId, conversationId);
+      await deleteConversation(context.env, userId, conversationId);
       
       return json({ 
         success: true, 

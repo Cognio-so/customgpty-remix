@@ -1,6 +1,10 @@
-node_modules
-
-/.wrangler
-/build
+node_modules/
 .env
+.env.local
 .dev.vars
+build/
+.wrangler/
+dist/
+.DS_Store
+*.log
+.cache/

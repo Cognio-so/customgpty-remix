@@ -15,7 +15,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
   if (intent === 'delete' && id) {
     try {
-      await deleteCustomGpt(id, user.id);
+      await deleteCustomGpt(context.env, id, user.id);
       return json({ success: true, message: "GPT deleted successfully" });
     } catch (error) {
       console.error("Error deleting GPT:", error);

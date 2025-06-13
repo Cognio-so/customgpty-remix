@@ -16,7 +16,8 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
   if (intent === 'updateFolder' && id) {
     try {
-      await updateCustomGpt(id, { folder: folder || null }, user.id);
+      // Fix: Add context.env parameter
+      await updateCustomGpt(context.env, id, { folder: folder || null }, user.id);
       return json({ success: true, message: "Folder updated successfully" });
     } catch (error) {
       console.error("Error updating folder:", error);

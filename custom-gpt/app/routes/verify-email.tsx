@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Form, useActionData, useSearchParams, Link, useNavigation } from "@remix-run/react";
 import type { ActionFunctionArgs, MetaFunction } from "@remix-run/cloudflare";
 import { verifyEmail } from "../services/auth";
-import { createSessionStorage, createUserSession } from "../lib/session"; 
+import { createUserSession } from "../lib/session"; 
 import { redirect, json } from "@remix-run/cloudflare";
 
 type ActionData = {
@@ -31,7 +31,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
       formData.get("digit6"),
     ].join("");
     
-    const result = await verifyEmail({ email, token });
+    const result = await verifyEmail(context.env, { email, token });
     
     return createUserSession(
       result.user._id,
@@ -133,7 +133,7 @@ export default function VerifyEmail() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-black text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-full bg-black text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center">
@@ -154,7 +154,7 @@ export default function VerifyEmail() {
             Didn't receive the code?{" "}
             <Link
               to="/login"
-              className="text-black font-medium hover:text-blue-800"
+              className="text-blue-600 font-medium hover:text-blue-800"
             >
               Try signing in again
             </Link>
@@ -163,7 +163,7 @@ export default function VerifyEmail() {
             Already have an account?{" "}
             <Link
               to="/login"
-              className="text-black font-medium hover:text-blue-800"
+              className="text-blue-600 font-medium hover:text-blue-800"
             >
               Sign in
             </Link>

@@ -22,6 +22,7 @@ interface CreateCustomGptProps {
   initialData?: any;
 }
 
+
 // Fix the CodeProps interface to be compatible with react-markdown
 interface CodeComponentProps {
   inline?: boolean;
@@ -93,14 +94,26 @@ const CreateCustomGpt = ({
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
+      // Check file size (10MB limit for images)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Image file size must not exceed 10MB. Please choose a smaller image.');
+        e.target.value = ''; // Reset the input
+        return;
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        e.target.value = ''; // Reset the input
+        return;
+      }
+      
       setSelectedImage(file);
 
       // Create a preview URL for the image
       const previewUrl = URL.createObjectURL(file);
       setImagePreview(previewUrl);
-
-      // Update the formData
-      handleInputChange('imageUrl', previewUrl);
     }
   };
 
@@ -108,7 +121,50 @@ const CreateCustomGpt = ({
   const handleFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const filesArray = Array.from(e.target.files);
-      setSelectedFiles(prev => [...prev, ...filesArray]);
+      const validFiles: File[] = [];
+      const errors: string[] = [];
+      
+      filesArray.forEach(file => {
+        // Check file size (100MB limit for knowledge base files)
+        if (file.size > 100 * 1024 * 1024) {
+          errors.push(`${file.name} is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Max size is 100MB.`);
+          return;
+        }
+        
+        // Check file type
+        const allowedTypes = [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'text/plain',
+          'text/markdown',
+          'application/json',
+          'text/csv',
+          'application/rtf',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        ];
+        
+        if (!allowedTypes.includes(file.type)) {
+          errors.push(`${file.name} has an unsupported file type. Please upload PDF, DOC, DOCX, TXT, MD, JSON, CSV, RTF, XLS, XLSX, PPT, or PPTX files.`);
+          return;
+        }
+        
+        validFiles.push(file);
+      });
+      
+      if (errors.length > 0) {
+        alert('Some files could not be added:\n\n' + errors.join('\n'));
+      }
+      
+      if (validFiles.length > 0) {
+        setSelectedFiles(prev => [...prev, ...validFiles]);
+      }
+      
+      // Reset the input
+      e.target.value = '';
     }
   };
 
@@ -127,6 +183,79 @@ const CreateCustomGpt = ({
   const handleTemplateSelect = (template: typeof promptTemplates[0]) => {
     handleInputChange('instructions', template.content);
     setShowTemplates(false);
+  };
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    // Create FormData manually instead of from the form
+    const submitFormData = new FormData();
+    
+    // Add all form fields manually using the state values (fixed variable names)
+    submitFormData.set('name', formData.name);
+    submitFormData.set('description', formData.description);
+    submitFormData.set('instructions', formData.instructions);
+    submitFormData.set('conversationStarter', formData.conversationStarter);
+    submitFormData.set('model', formData.model);
+    submitFormData.set('folder', formData.folder || '');
+    submitFormData.set('webBrowsing', formData.webBrowsing ? 'on' : 'off');
+    
+    // Add intent and gptId
+    if (editGptId) {
+      submitFormData.set('intent', 'update');
+      submitFormData.set('gptId', editGptId);
+    } else {
+      submitFormData.set('intent', 'create');
+    }
+    
+    // Add selected image if any
+    if (selectedImage) {
+      submitFormData.set('profileImage', selectedImage);
+    }
+    
+    // Add existing image URL for updates
+    if (editGptId && !selectedImage && imagePreview) {
+      submitFormData.set('existingImageUrl', imagePreview);
+    }
+   
+    
+    selectedFiles.forEach((file, index) => {
+      if (file instanceof File && file.size > 0 && file.name && file.name !== '') {
+
+        submitFormData.append('knowledgeFiles', file);
+      } else {
+        console.error(`❌ Skipping invalid file at index ${index}:`, {
+          name: file?.name || 'NO_NAME',
+          size: file?.size || 'NO_SIZE',
+          type: file?.type || 'NO_TYPE',
+          isFile: file instanceof File
+        });
+      }
+    });
+    
+
+    
+    // Submit using fetch
+    const form = e.currentTarget;
+    fetch(form.action || window.location.pathname, {
+      method: 'POST',
+      body: submitFormData,
+    }).then(response => {
+      if (response.ok) {
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else {
+          window.location.reload();
+        }
+      } else {
+        response.text().then(text => {
+          console.error('Form submission failed:', response.status, text);
+        });
+      }
+    }).catch(error => {
+      console.error('Form submission error:', error);
+    });
   };
 
   // Clean up object URLs when component unmounts
@@ -386,7 +515,13 @@ const CreateCustomGpt = ({
 
   return (
     <div className="w-full h-full flex flex-col bg-gray-100 dark:bg-[#1A1A1A] text-gray-900 dark:text-white">
-      <Form ref={formRef} method="post" encType="multipart/form-data" className="flex flex-col md:flex-row flex-1 overflow-hidden">
+      <Form 
+        ref={formRef} 
+        method="post" 
+        encType="multipart/form-data" 
+        onSubmit={handleSubmit}
+        className="flex flex-col md:flex-row flex-1 overflow-hidden"
+      >
         {/* Right Side - Preview */}
         <div className="w-full md:w-1/2 h-1/2 md:h-full bg-gray-200 dark:bg-[#2A2A2A] flex flex-col">
           <div className="p-4 md:p-6 flex flex-col flex-1">
@@ -490,20 +625,23 @@ const CreateCustomGpt = ({
           {/* Image Upload */}
           <div className="flex justify-center mb-5 md:mb-8">
             <label
-              className="relative cursor-pointer"
+              className="relative cursor-pointer group"
               onClick={() => imageInputRef.current?.click()}
             >
               <div className={`w-16 h-16 md:w-24 md:h-24 rounded-full border-2 border-dashed ${imagePreview ? 'border-transparent' : 'border-gray-400 dark:border-gray-600'} flex items-center justify-center hover:opacity-90 relative overflow-hidden`}>
                 {imagePreview ? (
                   <>
                     <img src={imagePreview} alt="Profile" className="w-full h-full object-cover rounded-full" />
-                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200">
+                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <IoAddOutline size={24} className="text-white" />
                     </div>
                   </>
                 ) : (
                   <IoAddOutline size={24} className="text-gray-500 dark:text-gray-500" />
                 )}
+              </div>
+              <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Max 10MB</span>
               </div>
               <input
                 ref={imageInputRef}
@@ -613,48 +751,78 @@ const CreateCustomGpt = ({
 
             {/* Knowledge Section */}
             <div className="space-y-2 md:space-y-3">
-              <label className="block text-xs md:text-sm font-medium text-gray-600 dark:text-gray-300">Knowledge</label>
+              <label className="block text-xs md:text-sm font-medium text-gray-600 dark:text-gray-300">
+                Knowledge Base
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(Max 100MB per file)</span>
+              </label>
               <div
                 className="border-2 border-dashed border-gray-400 dark:border-gray-700 rounded-lg p-3 md:p-4 text-center cursor-pointer hover:border-blue-500"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <FaUpload className="h-4 w-4 md:h-6 md:w-6 mx-auto mb-1 md:mb-2 text-gray-500 dark:text-gray-500" />
-                <h3 className="font-medium text-xs md:text-sm text-gray-800 dark:text-white mb-1">Upload Files</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 md:mb-3">Upload PDFs, docs, or text files to give your GPT specific knowledge</p>
+                <h3 className="font-medium text-xs md:text-sm text-gray-800 dark:text-white mb-1">Upload Knowledge Files</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 md:mb-3">
+                  Upload PDFs, docs, text files, spreadsheets, or presentations to give your GPT specific knowledge
+                  <br />
+                  <span className="font-medium text-blue-600 dark:text-blue-400">Max 100MB per file</span>
+                </p>
                 <button type="button" className="px-3 md:px-4 py-1 md:py-1.5 text-xs md:text-sm bg-gray-200 dark:bg-[#262626] text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
                   Select Files
                 </button>
                 <input
                   ref={fileInputRef}
                   type="file"
+                  name="knowledgeFiles"
                   className="hidden"
                   multiple
-                  accept=".pdf,.doc,.docx,.txt,.md"
+                  accept=".pdf,.doc,.docx,.txt,.md,.json,.csv,.rtf,.xls,.xlsx,.ppt,.pptx"
                   onChange={handleFilesSelect}
                 />
               </div>
 
-              {/* Display selected files */}
+              {/* Display selected files with better formatting */}
               {selectedFiles.length > 0 && (
                 <div className="mt-2 bg-white dark:bg-[#262626] border border-gray-400 dark:border-gray-700 rounded-md p-2">
-                  <h4 className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Selected Files ({selectedFiles.length})</h4>
-                  <div className="max-h-32 overflow-y-auto">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between py-1 border-b border-gray-200 dark:border-gray-700 last:border-0">
-                        <span className="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[80%]">{file.name}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveFile(index);
-                          }}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <FaTrash size={12} />
-                        </button>
-                      </div>
-                    ))}
+                  <h4 className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">
+                    Selected Files ({selectedFiles.length})
+                  </h4>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {selectedFiles.map((file, index) => {
+                      const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
+                      const isLarge = file.size > 100 * 1024 * 1024; // Check if over 100MB
+                      
+                      return (
+                        <div key={index} className={`flex items-center justify-between py-2 px-2 rounded border-b border-gray-200 dark:border-gray-700 last:border-0 ${isLarge ? 'bg-red-50 dark:bg-red-900/20' : ''}`}>
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-xs block truncate ${isLarge ? 'text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                              {file.name}
+                            </span>
+                            <span className={`text-xs ${isLarge ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+                              {sizeInMB} MB {isLarge && '(Too large - Max 100MB)'}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveFile(index);
+                            }}
+                            className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0 p-1"
+                            title="Remove file"
+                          >
+                            <FaTrash size={12} />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
+                  
+                  {/* Show warning if any files are too large */}
+                  {selectedFiles.some(file => file.size > 100 * 1024 * 1024) && (
+                    <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+                      ⚠️ Some files exceed the 100MB limit and will not be uploaded.
+                    </div>
+                  )}
                 </div>
               )}
             </div>

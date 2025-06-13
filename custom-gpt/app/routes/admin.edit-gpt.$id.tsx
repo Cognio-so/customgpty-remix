@@ -14,7 +14,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
   }
 
   try {
-    const gpt = await getCustomGptById(params.id, user.id);
+    const gpt = await getCustomGptById(context.env, params.id, user.id);
     // Redirect to the create-gpt route with edit mode and GPT data
     const searchParams = new URLSearchParams({
       mode: 'edit',

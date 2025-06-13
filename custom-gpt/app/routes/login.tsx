@@ -12,6 +12,7 @@ type ActionData = {
   message?: string;
   success: boolean;
   email?: string;
+  requireVerification?: boolean;
 };
 
 export const meta: MetaFunction = () => {
@@ -39,7 +40,8 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const password = formData.get("password") as string;
   
   try {
-    const result = await LoginUser(email, password);
+    // Pass context.env to the service
+    const result = await LoginUser(context.env, email, password);
     
     if (result.success) {
       // Determine redirect path based on user role
@@ -57,16 +59,17 @@ export async function action({ request, context }: ActionFunctionArgs) {
       return json({ 
         success: false, 
         message: result.message,
-        requireVerification: true 
-      });
+        requireVerification: true,
+        email: email
+      } as ActionData);
     }
     
-    return json({ success: false, error: "Login failed" });
+    return json({ success: false, error: "Login failed" } as ActionData);
   } catch (error) {
     return json({ 
       success: false, 
       error: error instanceof Error ? error.message : "Login failed" 
-    });
+    } as ActionData);
   }
 }
 
@@ -206,23 +209,18 @@ export default function Login() {
         
         <button 
           type="button"
-          className="w-full flex items-center justify-center py-2 px-4 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
         >
-          <FcGoogle className="w-5 h-5 mr-2" />
-          <span className="font-medium text-gray-700">Google</span>
+          <FcGoogle className="w-5 h-5" />
+          Continue with Google
         </button>
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-600 text-sm">
-            Don't have an account?{" "}
-            <Link
-              to="/signup"
-              className="text-blue-600 font-medium hover:text-blue-800"
-            >
-              Sign up
-            </Link>
-          </p>
-        </div>
+        <p className="text-center text-sm text-gray-600 mt-8">
+          Don't have an account?{" "}
+          <Link to="/signup" className="text-blue-600 font-medium hover:text-blue-800">
+            Sign up for free
+          </Link>
+        </p>
       </div>
     </div>
   );

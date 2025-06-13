@@ -1,5 +1,5 @@
 import { ActionFunctionArgs, LoaderFunctionArgs, json } from '@remix-run/cloudflare';
-import { useLoaderData, useActionData, useFetcher } from '@remix-run/react';
+import { useLoaderData, useActionData} from '@remix-run/react';  
 import UserSettingPage from '~/components/user/UserSetting';
 import { getThemeFromCookie, createThemeCookie, Theme } from '~/lib/theme';
 import { getUserFromSession } from '../lib/session.js';
@@ -10,7 +10,7 @@ type LoaderData = {
     id: string;
     name: string;
     email: string;
-    profilePic?: string;
+    profilePic: string;
     role: string;
     isVerified: boolean;
   };
@@ -35,7 +35,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     
     return json({ 
       user: {
-        id: user.id,
+        id: user.id || user._id?.toString(),
         name: user.name,
         email: user.email,
         profilePic: user.profilePic || '',
@@ -92,7 +92,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }
 
         try {
-          const updatedUser = await updateUserProfile(user.id, { name, email });
+          const updatedUser = await updateUserProfile(context.env, user.id || user._id?.toString(), { name, email });
           return json({ 
             success: true, 
             message: 'Profile updated successfully',
@@ -124,7 +124,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }
 
         try {
-          await updateUserPassword(user.id, currentPassword, newPassword);
+          await updateUserPassword(context.env, user.id || user._id?.toString(), currentPassword, newPassword);
           return json({ 
             success: true, 
             message: 'Password updated successfully'
@@ -140,12 +140,12 @@ export async function action({ request, context }: ActionFunctionArgs) {
       case 'uploadProfilePicture': {
         const profileImage = formData.get('profileImage') as File;
 
-        if (!profileImage) {
+        if (!profileImage || profileImage.size === 0) {
           return json({ error: 'No image file provided', success: false } as ActionData, { status: 400 });
         }
 
         try {
-          const updatedUser = await uploadProfilePicture(user.id, profileImage);
+          const updatedUser = await uploadProfilePicture(context.env, user.id || user._id?.toString(), profileImage);
           return json({ 
             success: true, 
             message: 'Profile picture updated successfully',

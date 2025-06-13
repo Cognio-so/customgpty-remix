@@ -44,8 +44,7 @@ const TeamMemberDetails = ({ user, gpts, isCurrentUser }: { user: any, gpts: any
   };
   
   const handleRemoveGpt = useCallback((gptId: string) => {
-    console.log('Remove GPT with ID:', gptId);
-    // Implement GPT removal logic
+    // Implement GPT removal 
   }, []);
 
   const renderProfileTab = () => (

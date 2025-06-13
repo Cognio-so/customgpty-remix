@@ -32,14 +32,15 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   return json({});
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request, context }: ActionFunctionArgs) {
   const formData = await request.formData();
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
   try {
-    const result = await SignupUser(name, email, password);
+    // Pass context.env to the service
+    const result = await SignupUser(context.env, name, email, password);
     // Redirect to verification page with email pre-filled
     return redirect(`/verify-email?email=${encodeURIComponent(email)}&message=${encodeURIComponent('Account created successfully! Please check your email for verification code.')}`);
   } catch (error: any) {
@@ -121,7 +122,7 @@ export default function Signup() {
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={6}
                 className="w-full bg-white text-black px-3 py-2 border border-neutral-300 rounded-lg pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="••••••••"
               />
@@ -198,23 +199,18 @@ export default function Signup() {
         
         <button 
           type="button"
-          className="w-full flex items-center justify-center py-2 px-4 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
         >
-          <FcGoogle className="w-5 h-5 mr-2" />
-          <span className="font-medium text-gray-700">Google</span>
+          <FcGoogle className="w-5 h-5" />
+          Continue with Google
         </button>
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-600 text-sm">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="text-blue-600 font-medium hover:text-blue-800"
-            >
-              Sign in
-            </Link>
-          </p>
-        </div>
+        <p className="text-center text-sm text-gray-600 mt-8">
+          Already have an account?{" "}
+          <Link to="/login" className="text-blue-600 font-medium hover:text-blue-800">
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   );
