@@ -1,5 +1,5 @@
 #:schema node_modules/wrangler/config-schema.json
-name = "mygpt"
+name = "custom-gpt-remix"
 
 main = "./server.ts"
 compatibility_date = "2024-09-26"
@@ -11,31 +11,30 @@ directory = "./build/client"
 [build]
 command = "npm run build"
 
-# Development environment variables - non-sensitive only
+# Production environment variables - non-sensitive only
 [vars]
-NODE_ENV = "development"
-APP_URL = "http://localhost:5173"
+NODE_ENV = "production"
+APP_URL = "https://custom-gpt-remix.your-subdomain.workers.dev"
+CLOUDFLARE_ACCOUNT_ID = "7a1ee5c85f806b8611bceb0195d44a6c"
+R2_BUCKET_NAME = "ai-agents"
+R2_PUBLIC_DOMAIN = "https://pub-3d035218db92408db790b6ce46af0d9e.r2.dev"
 
-# R2 bucket binding - FIXED
+# R2 bucket bindings for file storage
 [[r2_buckets]]
 binding = "FILES_BUCKET"
 bucket_name = "ai-agents"
 preview_bucket_name = "ai-agents-dev"
 
-# Alternative binding name to match the code
 [[r2_buckets]]
 binding = "MY_BUCKET"
 bucket_name = "ai-agents"
 preview_bucket_name = "ai-agents-dev"
 
-# Service binding
+# AI service binding for Cloudflare AI
 [[services]]
 binding = "AI"
 service = "@cf/meta/llama-2-7b-chat-int8"
 
-# Production environment variables
-[env.production.vars]
-CLOUDFLARE_ACCOUNT_ID = "7a1ee5c85f806b8611bceb0195d44a6c"
-R2_BUCKET_NAME = "ai-agents"
-R2_PUBLIC_DOMAIN = "https://pub-3d035218db92408db790b6ce46af0d9e.r2.dev"
-FILES_BUCKET = "ai-agents"
+# Resource limits for production
+[limits]
+cpu_ms = 30000
