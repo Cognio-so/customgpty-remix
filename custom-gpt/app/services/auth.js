@@ -346,7 +346,7 @@ const getUserById = async (env, userId) => {
 // NEW FUNCTIONS FOR USER SETTINGS
 
 // Update user profile
-export const updateUserProfile = async (env, userId, profileData) => {
+const updateUserProfile = async (env, userId, profileData) => {
   try {
     if (!userId) {
       throw new Error("User ID is required");
@@ -408,7 +408,7 @@ export const updateUserProfile = async (env, userId, profileData) => {
 };
 
 // Update user password
-export const updateUserPassword = async (env, userId, currentPassword, newPassword) => {
+const updateUserPassword = async (env, userId, currentPassword, newPassword) => {
   try {
     if (!userId || !currentPassword || !newPassword) {
       throw new Error("User ID, current password, and new password are required");
@@ -462,7 +462,7 @@ export const updateUserPassword = async (env, userId, currentPassword, newPasswo
 };
 
 // Upload profile picture
-export const uploadProfilePicture = async (env, userId, imageFile) => {
+const uploadProfilePicture = async (env, userId, imageFile) => {
   try {
     if (!userId || !imageFile) {
       throw new Error("User ID and image file are required");
