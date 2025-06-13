@@ -29,8 +29,3 @@ preview_bucket_name = "ai-agents-dev"
 binding = "MY_BUCKET"
 bucket_name = "ai-agents"
 preview_bucket_name = "ai-agents-dev"
-
-# AI service binding for Cloudflare AI
-[[services]]
-binding = "AI"
-service = "@cf/meta/llama-2-7b-chat-int8"
