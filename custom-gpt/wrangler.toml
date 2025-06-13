@@ -34,7 +34,3 @@ preview_bucket_name = "ai-agents-dev"
 [[services]]
 binding = "AI"
 service = "@cf/meta/llama-2-7b-chat-int8"
-
-# Resource limits for production
-[limits]
-cpu_ms = 30000
