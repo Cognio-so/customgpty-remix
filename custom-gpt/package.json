@@ -22,7 +22,7 @@
     "isbot": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.513.0",
-    "mongodb": "^6.10.0",
+    "mongodb": "^6.17.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",
@@ -32,7 +32,7 @@
     "zod": "^3.25.56"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241022.0",
+    "@cloudflare/workers-types": "^4.20241022.0",                             
     "@remix-run/dev": "^2.16.8",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.9",
@@ -52,7 +52,7 @@
     "typescript": "^5.1.6",
     "vite": "^6.0.0",
     "vite-tsconfig-paths": "^4.2.1",
-    "wrangler": "3.84.0"
+    "wrangler": "^4.20.0"
   },
   "engines": {
     "node": ">=20.0.0"
