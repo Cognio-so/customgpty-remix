@@ -1,3 +1,6 @@
+// Import the polyfill at the very top
+import 'cf-mongodb-polyfills';
+
 // Workers-compatible MongoDB connection
 let cachedClient = null;
 let cachedDb = null;
@@ -27,15 +30,12 @@ export const connectToDatabase = async (env) => {
     // Dynamic import for Workers compatibility
     const { MongoClient } = await import('mongodb');
     
-    // Workers-compatible connection options - only use supported options
+    // Minimal connection options for Workers with polyfill
     const client = new MongoClient(env.MONGODB_URI, {
-      // Essential options for Workers environment
       serverSelectionTimeoutMS: 10000,
       connectTimeoutMS: 10000,
       maxPoolSize: 1,
       minPoolSize: 0,
-      maxIdleTimeMS: 30000,
-      // Remove unsupported options like autoIndex, useUnifiedTopology, family, etc.
     });
 
     await client.connect();
@@ -46,7 +46,7 @@ export const connectToDatabase = async (env) => {
     
     // Test connection
     await db.command({ ping: 1 });
-    console.log('✅ MongoDB connected successfully');
+    console.log('✅ MongoDB connected successfully with polyfill');
 
     cachedClient = client;
     cachedDb = db;
@@ -276,7 +276,7 @@ export const checkDatabaseHealth = async (env) => {
   try {
     const { db } = await connectToDatabase(env);
     await db.command({ ping: 1 });
-    return { status: 'healthy', message: 'Database connection is working' };
+    return { status: 'healthy', message: 'Database connection is working with polyfill' };
   } catch (error) {
     return { status: 'unhealthy', message: error.message };
   }
