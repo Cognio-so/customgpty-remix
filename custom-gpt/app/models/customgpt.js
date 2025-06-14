@@ -1,80 +1,86 @@
-import mongoose from "mongoose";
+// CustomGPT model schema definition for Cloudflare Workers
+// No mongoose dependency - using plain JavaScript objects
 
-const customGptSchema = new mongoose.Schema({
+// CustomGPT schema definition for validation
+export const customGptSchemaDefinition = {
     name: {
-        type: String,
+        type: "string",
         required: true,
-        trim: true,
         minLength: 2,
         maxLength: 100
     },
     description: {
-        type: String,
+        type: "string",
         required: true,
-        trim: true,
         minLength: 10,
         maxLength: 500
     },
     instructions: {
-        type: String,
+        type: "string",
         required: true,
         minLength: 10
     },
     conversationStarter: {
-        type: String,
-        default: "",
+        type: "string",
+        default: ""
     },
     model: {
-        type: String,
-        default: "openrouter/auto",
+        type: "string",
+        default: "openrouter/auto"
     },
     capabilities: {
-        webBrowsing: {
-            type: Boolean,
-            default: false,
-        },
+        type: "object",
+        default: {
+            webBrowsing: false
+        }
     },
     imageUrl: {
-        type: String,
-        default: "",
+        type: "string",
+        default: ""
     },
-    knowledgeBase: [{
-        fileName: String,
-        fileUrl: String,
-        uploadedAt: {
-            type: Date,
-            default: Date.now,
-        },
-    }],
+    knowledgeBase: {
+        type: "array",
+        default: [],
+        items: {
+            fileName: {
+                type: "string"
+            },
+            fileUrl: {
+                type: "string"
+            },
+            uploadedAt: {
+                type: "date",
+                default: () => new Date()
+            }
+        }
+    },
     folder: {
-        type: String,
-        default: null,
+        type: "string",
+        default: null
     },
     createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
+        type: "objectId",
+        required: true
     },
-    assignedUsers: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-    }],
+    assignedUsers: {
+        type: "array",
+        default: []
+    },
     isActive: {
-        type: Boolean,
-        default: true,
+        type: "boolean",
+        default: true
     },
     createdAt: {
-        type: Date,
+        type: "date",
         default: () => new Date()
     },
     updatedAt: {
-        type: Date,
+        type: "date",
         default: () => new Date()
     }
-}, {
-    timestamps: true,
-});
+};
 
+// Validation function
 export const validateCustomGpt = (gptData) => {
     const errors = [];
 
@@ -82,8 +88,16 @@ export const validateCustomGpt = (gptData) => {
         errors.push("Name must be at least 2 characters long");
     }
 
+    if (gptData.name && gptData.name.length > 100) {
+        errors.push("Name must be less than 100 characters");
+    }
+
     if (!gptData.description || gptData.description.length < 10) {
         errors.push("Description must be at least 10 characters long");
+    }
+
+    if (gptData.description && gptData.description.length > 500) {
+        errors.push("Description must be less than 500 characters");
     }
 
     if (!gptData.instructions || gptData.instructions.length < 10) {
@@ -103,19 +117,22 @@ export const validateCustomGpt = (gptData) => {
 // Create CustomGPT document
 export const createCustomGptDocument = (gptData) => {
     return {
-        name: gptData.name,
-        description: gptData.description,
+        name: gptData.name?.trim(),
+        description: gptData.description?.trim(),
         instructions: gptData.instructions,
-        conversationStarter: gptData.conversationStarter || customGptSchema.conversationStarter.default,
-        model: gptData.model || customGptSchema.model.default,
-        capabilities: gptData.capabilities || customGptSchema.capabilities.default,
-        imageUrl: gptData.imageUrl || customGptSchema.imageUrl.default,
-        knowledgeBase: gptData.knowledgeBase || customGptSchema.knowledgeBase.default,
-        folder: gptData.folder || customGptSchema.folder.default,
+        conversationStarter: gptData.conversationStarter || customGptSchemaDefinition.conversationStarter.default,
+        model: gptData.model || customGptSchemaDefinition.model.default,
+        capabilities: gptData.capabilities || customGptSchemaDefinition.capabilities.default,
+        imageUrl: gptData.imageUrl || customGptSchemaDefinition.imageUrl.default,
+        knowledgeBase: gptData.knowledgeBase || customGptSchemaDefinition.knowledgeBase.default,
+        folder: gptData.folder || customGptSchemaDefinition.folder.default,
         createdBy: gptData.createdBy,
-        assignedUsers: gptData.assignedUsers || customGptSchema.assignedUsers.default,
-        isActive: gptData.isActive !== undefined ? gptData.isActive : customGptSchema.isActive.default,
+        assignedUsers: gptData.assignedUsers || customGptSchemaDefinition.assignedUsers.default,
+        isActive: gptData.isActive !== undefined ? gptData.isActive : customGptSchemaDefinition.isActive.default,
         createdAt: new Date(),
         updatedAt: new Date()
     };
 };
+
+// Collection name constant
+export const CUSTOMGPT_COLLECTION = 'customgpts';

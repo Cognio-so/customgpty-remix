@@ -1,77 +1,7 @@
-import mongoose from "mongoose";
+// Remove mongoose import and schema definitions
+// Keep only the schema definitions and utility functions
 
-const messageSchema = new mongoose.Schema({
-    role: {
-        type: String,
-        enum: ['user', 'assistant'],
-        required: true
-    },
-    content: {
-        type: String,
-        required: true
-    },
-    timestamp: {
-        type: Date,
-        default: Date.now
-    }
-});
-
-const conversationSchema = new mongoose.Schema({
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-        index: true
-    },
-    gptId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "CustomGpt",
-        required: true
-    },
-    gptName: {
-        type: String,
-        required: true
-    },
-    messages: [messageSchema],
-    lastMessage: {
-        type: String,
-        default: ""
-    },
-    model: {
-        type: String,
-        default: "openrouter/auto"
-    },
-    summary: {
-        type: String,
-        default: ""
-    },
-    isActive: {
-        type: Boolean,
-        default: true,
-        index: true
-    },
-    deletedAt: {
-        type: Date,
-        default: null
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
-    }
-}, {
-    timestamps: true
-});
-
-// Index for efficient queries
-conversationSchema.index({ userId: 1, updatedAt: -1 });
-conversationSchema.index({ userId: 1, isActive: 1 });
-
-
-// Conversation model schema definition
+// Conversation model schema definition for validation
 export const conversationSchemaDefinition = {
     userId: {
         type: "objectId",
@@ -198,4 +128,7 @@ export const createMessageDocument = (messageData) => {
         content: messageData.content,
         timestamp: messageData.timestamp || new Date()
     };
-}; 
+};
+
+// Collection name constant
+export const CONVERSATION_COLLECTION = 'conversations'; 

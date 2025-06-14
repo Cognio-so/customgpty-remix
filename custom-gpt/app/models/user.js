@@ -1,73 +1,68 @@
-// Mongoose models are not compatible with the serverless environment of Cloudflare Workers.
-// Database operations should be performed using the dbUtils in /app/lib/db.js,
-// which use the MongoDB Data API.
-// export const User = mongoose.model("User", userSchema);
-
-export const userSchema = new mongoose.Schema({
-
+// User model schema definition for Cloudflare Workers
+export const userSchemaDefinition = {
     name: {
-        type: String,
+        type: "string",
         required: true,
         minLength: 2,
         maxLength: 100
     },
     email: {
-        type: String,
+        type: "string",
         required: true,
         unique: true,
         pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     },
     password: {
-        type: String,
+        type: "string",
         required: true,
         minLength: 6
     },
     role: {
-        type: String,
+        type: "string",
         enum: ["admin", "user"],
         default: "user"
     },
     isActive: {
-        type: Boolean,
+        type: "boolean",
         default: true
     },
     apiKeys: {
-        type: Object,
+        type: "object",
         default: {}
     },
     isVerified: {
-        type: Boolean,
+        type: "boolean",
         default: false
     },
     resetPasswordToken: {
-        type: String,
+        type: "string",
         optional: true
     },
     resetPasswordExpiresAt: {
-        type: Date,
+        type: "date",
         optional: true
     },
     verificationToken: {
-        type: String,
+        type: "string",
         optional: true
     },
     verificationTokenExpiresAt: {
-        type: Date,
+        type: "date",
         optional: true
     },
     profilePic: {
-        type: String,
+        type: "string",
         default: ""
     },
     createdAt: {
-        type: Date,
+        type: "date",
         default: () => new Date()
     },
     updatedAt: {
-        type: Date,
+        type: "date",
         default: () => new Date()
     }
-}, { timestamps: true });
+};
 
 // Validation function
 export const validateUser = (userData) => {
@@ -114,3 +109,6 @@ export const createUserDocument = (userData) => {
         updatedAt: new Date()
     };
 };
+
+// Collection name constant
+export const USER_COLLECTION = 'users'; 
