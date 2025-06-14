@@ -75,9 +75,6 @@ const customGptSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-export const CustomGpt = mongoose.model("CustomGpt", customGptSchema);
-
-// Validation function
 export const validateCustomGpt = (gptData) => {
     const errors = [];
 

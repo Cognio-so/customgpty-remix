@@ -41,52 +41,6 @@ export const connectToDatabase = async (env) => {
   }
 };
 
-// Alternative: Use MongoDB Data API (more reliable for Workers)
-export const connectToDatabase_DataAPI = async (env) => {
-  if (!env.MONGODB_DATA_API_URL || !env.MONGODB_API_KEY) {
-    throw new Error('MongoDB Data API credentials not configured');
-  }
-
-  return {
-    async findOne(collection, filter) {
-      const response = await fetch(`${env.MONGODB_DATA_API_URL}/action/findOne`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': env.MONGODB_API_KEY,
-        },
-        body: JSON.stringify({
-          collection,
-          database: 'customgpt',
-          filter,
-        }),
-      });
-      
-      const result = await response.json();
-      return result.document;
-    },
-    
-    async insertOne(collection, document) {
-      const response = await fetch(`${env.MONGODB_DATA_API_URL}/action/insertOne`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': env.MONGODB_API_KEY,
-        },
-        body: JSON.stringify({
-          collection,
-          database: 'customgpt',
-          document,
-        }),
-      });
-      
-      return await response.json();
-    },
-    
-    // Add more methods as needed
-  };
-};
-
 // Database utility functions
 export const dbUtils = {
   async findOne(env, collection, query) {
@@ -185,27 +139,5 @@ export const dbUtils = {
   }
 };
 
-// Helper function to create indexes
-export async function createIndexes(env) {
-  const db = await connectToDatabase(env);
-  
-  try {
-    // Users collection indexes
-    await db.collection('users').createIndex({ email: 1 }, { unique: true });
-    await db.collection('users').createIndex({ isActive: 1 });
-    await db.collection('users').createIndex({ role: 1 });
-    
-    // CustomGpts collection indexes
-    await db.collection('customgpts').createIndex({ createdBy: 1 });
-    await db.collection('customgpts').createIndex({ isActive: 1 });
-    await db.collection('customgpts').createIndex({ assignedUsers: 1 });
-    
-    // Conversations collection indexes
-    await db.collection('conversations').createIndex({ userId: 1, updatedAt: -1 });
-    await db.collection('conversations').createIndex({ userId: 1, isActive: 1 });
-    await db.collection('conversations').createIndex({ gptId: 1 });
-    
-  } catch (error) {
-    console.error('Error creating indexes:', error);
-  }
-}
+// It is recommended to create indexes directly in your MongoDB Atlas dashboard
+// as this function may not work reliably in a serverless environment.

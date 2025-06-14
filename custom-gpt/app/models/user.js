@@ -1,4 +1,7 @@
-import mongoose from "mongoose";
+// Mongoose models are not compatible with the serverless environment of Cloudflare Workers.
+// Database operations should be performed using the dbUtils in /app/lib/db.js,
+// which use the MongoDB Data API.
+// export const User = mongoose.model("User", userSchema);
 
 export const userSchema = new mongoose.Schema({
 
@@ -65,8 +68,6 @@ export const userSchema = new mongoose.Schema({
         default: () => new Date()
     }
 }, { timestamps: true });
-
-export const User = mongoose.model("User", userSchema);
 
 // Validation function
 export const validateUser = (userData) => {

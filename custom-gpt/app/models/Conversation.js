@@ -70,7 +70,6 @@ const conversationSchema = new mongoose.Schema({
 conversationSchema.index({ userId: 1, updatedAt: -1 });
 conversationSchema.index({ userId: 1, isActive: 1 });
 
-export const Conversation = mongoose.model("Conversation", conversationSchema);
 
 // Conversation model schema definition
 export const conversationSchemaDefinition = {
