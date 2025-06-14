@@ -72,7 +72,7 @@ export const validateUser = (userData) => {
         errors.push("Name must be at least 2 characters long");
     }
 
-    if (!userData.email || !userSchema.email.pattern.test(userData.email)) {
+    if (!userData.email || !userSchemaDefinition.email.pattern.test(userData.email)) {
         errors.push("Please provide a valid email address");
     }
 
@@ -80,7 +80,7 @@ export const validateUser = (userData) => {
         errors.push("Password must be at least 6 characters long");
     }
 
-    if (userData.role && !userSchema.role.enum.includes(userData.role)) {
+    if (userData.role && !userSchemaDefinition.role.enum.includes(userData.role)) {
         errors.push("Invalid user role");
     }
 
@@ -96,11 +96,11 @@ export const createUserDocument = (userData) => {
         name: userData.name,
         email: userData.email.toLowerCase(),
         password: userData.password,
-        role: userData.role || userSchema.role.default,
-        isActive: userData.isActive !== undefined ? userData.isActive : userSchema.isActive.default,
-        apiKeys: userData.apiKeys || userSchema.apiKeys.default,
-        isVerified: userData.isVerified !== undefined ? userData.isVerified : userSchema.isVerified.default,
-        profilePic: userData.profilePic || userSchema.profilePic.default,
+        role: userData.role || userSchemaDefinition.role.default,
+        isActive: userData.isActive !== undefined ? userData.isActive : userSchemaDefinition.isActive.default,
+        apiKeys: userData.apiKeys || userSchemaDefinition.apiKeys.default,
+        isVerified: userData.isVerified !== undefined ? userData.isVerified : userSchemaDefinition.isVerified.default,
+        profilePic: userData.profilePic || userSchemaDefinition.profilePic.default,
         resetPasswordToken: userData.resetPasswordToken,
         resetPasswordExpiresAt: userData.resetPasswordExpiresAt,
         verificationToken: userData.verificationToken,

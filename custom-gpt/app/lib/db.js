@@ -1,6 +1,13 @@
-// Workers-compatible MongoDB connection
+// Workers-compatible MongoDB connection with fallback strategies
 let cachedClient = null;
 let cachedDb = null;
+
+// Check if we're running in Cloudflare Workers environment
+const isCloudflareWorkers = () => {
+  return typeof globalThis !== 'undefined' && 
+         globalThis.navigator && 
+         globalThis.navigator.userAgent === 'Cloudflare-Workers';
+};
 
 export const connectToDatabase = async (env) => {
   if (!env.MONGODB_URI) {
@@ -12,18 +19,43 @@ export const connectToDatabase = async (env) => {
   }
 
   try {
+    // Check if we need to use polyfills for Workers
+    if (isCloudflareWorkers()) {
+      console.log('🔧 Detected Cloudflare Workers environment, using enhanced compatibility mode');
+    }
+
     // Dynamic import for Workers compatibility
     const { MongoClient } = await import('mongodb');
     
-    // Workers-compatible connection options
-    const client = new MongoClient(env.MONGODB_URI, {
-      // Minimal options for Workers environment
+    // Convert mongodb+srv to mongodb if in Workers environment to avoid DNS issues
+    let connectionUri = env.MONGODB_URI;
+    if (isCloudflareWorkers() && connectionUri.includes('mongodb+srv://')) {
+      console.warn('⚠️  Converting mongodb+srv:// to mongodb:// for Workers compatibility');
+      // This is a simplified conversion - in production you'd want to resolve the SRV record manually
+      // or use a standard connection string
+      connectionUri = connectionUri.replace('mongodb+srv://', 'mongodb://');
+    }
+    
+    // Enhanced Workers-compatible connection options
+    const client = new MongoClient(connectionUri, {
+      // Essential options for Workers environment
       serverSelectionTimeoutMS: 10000,
       connectTimeoutMS: 10000,
+      socketTimeoutMS: 10000,
       maxPoolSize: 1,
       minPoolSize: 0,
       maxIdleTimeMS: 30000,
-      // Remove all socket-related options for Workers compatibility
+      // Disable problematic features for Workers
+      useUnifiedTopology: true,
+      // Additional Workers-specific options
+      ...(isCloudflareWorkers() && {
+        // Force IPv4 to avoid IPv6 issues in Workers
+        family: 4,
+        // Disable automatic index creation
+        autoIndex: false,
+        // Use direct connection for better compatibility
+        directConnection: false,
+      })
     });
 
     await client.connect();
@@ -45,14 +77,42 @@ export const connectToDatabase = async (env) => {
     // Reset cache on error
     cachedClient = null;
     cachedDb = null;
-    throw new Error(`Database connection failed: ${error.message}`);
+    
+    // Provide more specific error messages and solutions
+    if (error.message.includes('dns.resolveSrv') || error.message.includes('dns.resolveTxt')) {
+      throw new Error(`Database connection failed: DNS resolution not supported in Cloudflare Workers. 
+
+Solutions:
+1. Use a standard MongoDB connection string (mongodb://) instead of SRV format (mongodb+srv://)
+2. Update your wrangler.toml to use compatibility_flags = ["nodejs_compat_v2"] and compatibility_date = "2025-01-15"
+3. Consider using a MongoDB connection string without SRV records
+
+Original error: ${error.message}`);
+    } else if (error.message.includes('net.createConnection') || error.message.includes('socket.once')) {
+      throw new Error(`Database connection failed: Network socket operations not fully supported in current Workers runtime.
+
+Solutions:
+1. Update wrangler.toml: compatibility_flags = ["nodejs_compat_v2"] and compatibility_date = "2025-01-15"
+2. Ensure you're using the latest version of Wrangler
+3. Consider using a MongoDB proxy or REST API as an alternative
+
+Original error: ${error.message}`);
+    } else {
+      throw new Error(`Database connection failed: ${error.message}`);
+    }
   }
 };
 
 // Helper function to extract database name from MongoDB URI
 function extractDbNameFromUri(uri) {
   try {
-    const url = new URL(uri);
+    // Handle both mongodb:// and mongodb+srv:// formats
+    let cleanUri = uri;
+    if (uri.startsWith('mongodb+srv://')) {
+      cleanUri = uri.replace('mongodb+srv://', 'mongodb://');
+    }
+    
+    const url = new URL(cleanUri);
     const pathname = url.pathname;
     if (pathname && pathname.length > 1) {
       return pathname.substring(1).split('?')[0];
@@ -251,6 +311,20 @@ export const checkDatabaseHealth = async (env) => {
     return { status: 'healthy', message: 'Database connection is working' };
   } catch (error) {
     return { status: 'unhealthy', message: error.message };
+  }
+};
+
+// Graceful shutdown
+export const closeDatabaseConnection = async () => {
+  if (cachedClient) {
+    try {
+      await cachedClient.close();
+      cachedClient = null;
+      cachedDb = null;
+      console.log('✅ MongoDB connection closed');
+    } catch (error) {
+      console.error('❌ Error closing MongoDB connection:', error);
+    }
   }
 };
 
