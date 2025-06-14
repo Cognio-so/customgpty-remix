@@ -1,4 +1,4 @@
-// Workers-compatible MongoDB connection with fallback strategies
+// Workers-compatible MongoDB connection
 let cachedClient = null;
 let cachedDb = null;
 
@@ -27,35 +27,15 @@ export const connectToDatabase = async (env) => {
     // Dynamic import for Workers compatibility
     const { MongoClient } = await import('mongodb');
     
-    // Convert mongodb+srv to mongodb if in Workers environment to avoid DNS issues
-    let connectionUri = env.MONGODB_URI;
-    if (isCloudflareWorkers() && connectionUri.includes('mongodb+srv://')) {
-      console.warn('⚠️  Converting mongodb+srv:// to mongodb:// for Workers compatibility');
-      // This is a simplified conversion - in production you'd want to resolve the SRV record manually
-      // or use a standard connection string
-      connectionUri = connectionUri.replace('mongodb+srv://', 'mongodb://');
-    }
-    
-    // Enhanced Workers-compatible connection options
-    const client = new MongoClient(connectionUri, {
+    // Workers-compatible connection options - only use supported options
+    const client = new MongoClient(env.MONGODB_URI, {
       // Essential options for Workers environment
       serverSelectionTimeoutMS: 10000,
       connectTimeoutMS: 10000,
-      socketTimeoutMS: 10000,
       maxPoolSize: 1,
       minPoolSize: 0,
       maxIdleTimeMS: 30000,
-      // Disable problematic features for Workers
-      useUnifiedTopology: true,
-      // Additional Workers-specific options
-      ...(isCloudflareWorkers() && {
-        // Force IPv4 to avoid IPv6 issues in Workers
-        family: 4,
-        // Disable automatic index creation
-        autoIndex: false,
-        // Use direct connection for better compatibility
-        directConnection: false,
-      })
+      // Remove unsupported options like autoIndex, useUnifiedTopology, family, etc.
     });
 
     await client.connect();
@@ -78,25 +58,13 @@ export const connectToDatabase = async (env) => {
     cachedClient = null;
     cachedDb = null;
     
-    // Provide more specific error messages and solutions
+    // Provide more specific error messages
     if (error.message.includes('dns.resolveSrv') || error.message.includes('dns.resolveTxt')) {
-      throw new Error(`Database connection failed: DNS resolution not supported in Cloudflare Workers. 
-
-Solutions:
-1. Use a standard MongoDB connection string (mongodb://) instead of SRV format (mongodb+srv://)
-2. Update your wrangler.toml to use compatibility_flags = ["nodejs_compat_v2"] and compatibility_date = "2025-01-15"
-3. Consider using a MongoDB connection string without SRV records
-
-Original error: ${error.message}`);
+      throw new Error(`Database connection failed: DNS resolution not supported in Cloudflare Workers. Please use a standard MongoDB connection string (mongodb://) instead of SRV format (mongodb+srv://). Original error: ${error.message}`);
     } else if (error.message.includes('net.createConnection') || error.message.includes('socket.once')) {
-      throw new Error(`Database connection failed: Network socket operations not fully supported in current Workers runtime.
-
-Solutions:
-1. Update wrangler.toml: compatibility_flags = ["nodejs_compat_v2"] and compatibility_date = "2025-01-15"
-2. Ensure you're using the latest version of Wrangler
-3. Consider using a MongoDB proxy or REST API as an alternative
-
-Original error: ${error.message}`);
+      throw new Error(`Database connection failed: Network socket operations not fully supported. Please ensure you're using the latest Cloudflare Workers runtime with nodejs_compat flag. Original error: ${error.message}`);
+    } else if (error.message.includes('autoindex') || error.message.includes('autoIndex')) {
+      throw new Error(`Database connection failed: The autoIndex option is not supported in Cloudflare Workers. Please remove this option from your MongoDB connection configuration. Original error: ${error.message}`);
     } else {
       throw new Error(`Database connection failed: ${error.message}`);
     }
